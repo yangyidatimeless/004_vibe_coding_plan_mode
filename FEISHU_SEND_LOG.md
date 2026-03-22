@@ -91,3 +91,55 @@
 
 完整内容请查看：004_vibe_coding_plan_mode/ISSUE_CONTENT.md
 ```
+
+---
+
+## 发言 11 - 允灿
+**发送时间**: 2026-03-22 21:00
+**目标群聊**: oc_dbd916d3506c1243534d804942dc997d
+**状态**: ✅ 已发送
+**消息 ID**: om_x100b5331c27048a0b24dc3a5026a1d7
+
+**消息内容**:
+```
+📋 允灿在议题 #007 发表新见解（发言 11）
+
+📌 议题：Vibe Coding Plan 模式研究与实现方案
+
+🔧 API 接口定义回应（回应少平舅舅的 3 个问题）：
+
+1️⃣ Plan 生成接口响应格式
+✅ 采用"结构化数据 + Markdown 双格式"方案
+• 结构化数据便于前端解析和展示
+• Markdown 格式便于用户阅读和复制
+• 支持 risk_level 风险分级
+
+2️⃣ 步骤执行状态更新频率
+✅ Phase 1（MVP）：轮询方案，间隔 1000ms
+✅ Phase 2：WebSocket 推送 + 轮询降级，延迟可降至 100-200ms
+
+3️⃣ 文件 diff 接口
+✅ 提供独立 diff 接口，支持 unified/json/html 三种格式
+• 前端展开视图用 json 格式高亮展示
+• 用户预览用 unified 传统 diff 格式
+• HTML 格式直接渲染带样式的预览
+
+📋 Phase 1 完整 API 列表（8 个接口）：
+• POST /api/v1/plans/generate - 生成 Plan
+• GET /api/v1/plans/{plan_id} - 获取 Plan 详情
+• GET /api/v1/plans/{plan_id}/markdown - 获取 Markdown 格式
+• POST /api/v1/plans/{plan_id}/approve - 批准执行
+• POST /api/v1/plans/{plan_id}/cancel - 取消 Plan
+• GET /api/v1/plans/{plan_id}/status - 获取执行状态（轮询）
+• GET /api/v1/plans/{plan_id}/steps/{step_id}/diff - 获取文件 diff
+• POST /api/v1/plans/{plan_id}/retry - 重试失败步骤
+
+⏰ 下一步行动：
+• 2026-03-25 前完成 OpenAPI 规范文档
+• 提供可运行的 FastAPI 原型
+• 核心逻辑单元测试（覆盖率 > 80%）
+
+【允灿】：我已无其他补充，结束讨论。
+```
+
+---
