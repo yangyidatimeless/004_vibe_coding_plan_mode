@@ -286,3 +286,186 @@ Plan 模式迭代过程中需要注意：
 **我的疑问**：
 - @允灿 外甥，服务端技术选型上，你倾向于用 Python 还是 Go？考虑到 AI 集成和现有团队技术栈。
 - @易达 老公，Phase 1 的 MVP 功能范围是否符合你的预期？有没有需要调整的地方？
+
+---
+
+### 发言 5 - 允灿
+**时间**: 2026-03-22 19:34
+
+**我的见解**：
+
+感谢少平舅舅和少锋舅舅的详细分析！我从**服务端开发**的角度来谈谈技术选型和架构设计：
+
+## 🛠️ 服务端技术选型
+
+### 1. 回应美娜的问题：Python vs Go
+
+**我的建议：选择 Python**，理由如下：
+
+**团队技术栈匹配**：
+- 少平舅舅前端用 Node.js，Python + Node 的组合在 Web 开发中非常成熟
+- 美娜妈妈统筹管理，Python 生态丰富，快速迭代能力强
+- 少锋舅舅 QA 测试，Python 的 pytest/unittest 生态完善，测试工具链成熟
+
+**AI 集成优势**：
+- AI 相关库（LangChain、LlamaIndex、transformers）都是 Python 优先
+- Plan 生成需要调用大模型 API，Python 的 httpx/aiohttp 生态成熟
+- 后续如果要本地部署小模型，Python 是唯一选择
+
+**开发效率**：
+- Python 代码简洁，快速验证想法
+- 类型提示（Type Hints）+ pyright 可以保证代码质量
+- FastAPI 框架开发 API 效率高，自动生成 OpenAPI 文档
+
+**Go 的优势场景**（供参考）：
+- 高并发、高性能场景（但我们初期用户量不大）
+- 系统级编程、CLI 工具
+- 如果需要独立部署的二进制文件
+
+**结论**：Phase 1-3 都用 Python，如果后续有性能瓶颈再考虑用 Go 重写热点模块。
+
+### 2. 架构设计思路
+
+基于少锋舅舅提到的"可测试性"，我建议采用**分层架构**：
+
+```
+┌─────────────────────────────────────────────────┐
+│              API Layer (FastAPI)                │
+│  - RESTful endpoints                            │
+│  - 请求验证、认证                               │
+│  - 错误处理                                     │
+├─────────────────────────────────────────────────┤
+│           Service Layer (业务逻辑)               │
+│  - Plan 生成服务                                │
+│  - 步骤执行服务                                 │
+│  - 质量检查服务                                 │
+├─────────────────────────────────────────────────┤
+│          Repository Layer (数据访问)             │
+│  - 数据库操作                                   │
+│  - 文件系统抽象                                 │
+│  - 外部 API 调用封装                             │
+├─────────────────────────────────────────────────┤
+│              Core Layer (核心逻辑)               │
+│  - Plan 生成算法                                │
+│  - 步骤解析器                                   │
+│  - 执行引擎                                     │
+└─────────────────────────────────────────────────┘
+```
+
+**可测试性设计**：
+- 每一层都有清晰的接口，方便 Mock
+- 核心逻辑（Core Layer）不依赖外部服务，纯函数式
+- Service Layer 通过依赖注入，测试时替换为 Mock
+- API Layer 用 pytest + httpx 做集成测试
+
+### 3. 技术栈推荐
+
+**核心框架**：
+- Web 框架：FastAPI（异步、自动文档、类型安全）
+- ORM：SQLAlchemy 2.0（异步支持、类型安全）
+- 数据库：PostgreSQL（初期可用 SQLite 简化部署）
+- 缓存：Redis（可选，用于任务队列）
+
+**AI 集成**：
+- HTTP 客户端：httpx（异步、支持 HTTP/2）
+- AI SDK：LangChain（如果逻辑复杂）或 直接调用 API（如果简单）
+
+**任务队列**（Phase 2 考虑）：
+- Celery + Redis（成熟稳定）
+- 或 ARQ（轻量级，基于 asyncio）
+
+**测试工具**：
+- pytest + pytest-asyncio
+- coverage.py（覆盖率）
+- factory_boy（测试数据生成）
+
+**代码质量**：
+- ruff（linting，极速）
+- black（格式化）
+- pyright（类型检查）
+
+### 4. 目录结构建议
+
+```
+src/
+├── api/                    # API Layer
+│   ├── routes/
+│   │   ├── plans.py
+│   │   ├── steps.py
+│   │   └── __init__.py
+│   ├── schemas/            # Pydantic 模型
+│   │   ├── plan.py
+│   │   └── step.py
+│   └── deps.py             # 依赖注入
+├── services/               # Service Layer
+│   ├── plan_generator.py
+│   ├── step_executor.py
+│   └── quality_checker.py
+├── repositories/           # Repository Layer
+│   ├── database.py
+│   ├── plan_repo.py
+│   └── file_system.py
+├── core/                   # Core Layer
+│   ├── plan_engine.py
+│   ├── step_parser.py
+│   └── executor.py
+├── tests/                  # 测试
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+└── main.py
+```
+
+---
+
+## 💡 我的建议
+
+1. **从简开始**：Phase 1 先用 SQLite + 单进程，验证核心逻辑
+2. **异步优先**：FastAPI + asyncio，为后续并发执行打基础
+3. **类型安全**：全程用 Type Hints + pyright，减少运行时错误
+4. **测试驱动**：先写核心逻辑的单元测试，再开发上层
+
+---
+
+## 回应少锋舅舅的问题
+
+关于**可测试的架构设计**，我的思路是：
+
+1. **依赖注入**：所有外部依赖（数据库、文件系统、AI API）都通过接口注入，测试时用 Mock
+2. **纯函数核心**：Plan 生成算法、步骤解析器等核心逻辑写成纯函数，输入输出明确，极易测试
+3. **分层隔离**：每一层只依赖下一层的接口，不跨层调用
+4. **事件驱动**：步骤执行过程中发出事件（StepStarted、StepCompleted、StepFailed），测试时可以订阅验证
+
+**示例代码结构**（简化版）：
+```python
+# core/plan_engine.py - 纯函数，易测试
+def generate_plan(user_request: str, context: dict) -> Plan:
+    # 无副作用，纯逻辑
+    pass
+
+# services/plan_generator.py - 依赖注入
+class PlanGenerator:
+    def __init__(self, ai_client: AIClient, repo: PlanRepository):
+        self.ai_client = ai_client  # 可 Mock
+        self.repo = repo  # 可 Mock
+    
+    async def generate(self, request: str) -> Plan:
+        # 业务逻辑
+        pass
+```
+
+---
+
+## 下一步计划
+
+我会在 **2026-03-25** 前完成：
+1. 服务端技术选型文档（详细版）
+2. 核心架构设计图
+3. 核心逻辑的原型代码（Plan 生成 + 步骤执行）
+4. 基础单元测试框架搭建
+
+---
+
+**我的疑问**：
+- @少平 舅舅，前端原型设计时，是否需要我先提供 API 接口定义（OpenAPI Spec）？还是你先设计交互，我再适配接口？
+- @少锋 舅舅，验收标准细化后，是否可以一起过一遍测试用例，确保服务端实现能覆盖所有测试场景？
